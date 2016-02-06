@@ -67,6 +67,16 @@ public struct RetrieveImageDownloadTask {
             internalTask.priority = newValue
         }
     }
+    
+    public func suspend() {
+        internalTask.suspend()
+    }
+    
+    public var state:NSURLSessionTaskState {
+        get {
+            return internalTask.state
+        }
+    }
 }
 
 private let defaultDownloaderName = "default"
@@ -131,7 +141,7 @@ public class ImageDownloader: NSObject {
         }
     }
     
-    private var session: NSURLSession?
+    public var session: NSURLSession?
     
     /// Delegate of this `ImageDownloader` object. See `ImageDownloaderDelegate` protocol for more.
     public weak var delegate: ImageDownloaderDelegate?
@@ -148,6 +158,11 @@ public class ImageDownloader: NSObject {
     /// The default downloader.
     public class var defaultDownloader: ImageDownloader {
         return instance
+    }
+    
+    public func updateCallback(callback:ImageDownloaderCompletionHandler?, forURL URL:NSURL){
+        let fetchLoad = fetchLoads[URL]
+        fetchLoad?.callbacks = [(nil, callback)]
     }
     
     /**
@@ -219,7 +234,7 @@ extension ImageDownloader {
             completionHandler: completionHandler)
     }
     
-    internal func downloadImageWithURL(URL: NSURL,
+    public func downloadImageWithURL(URL: NSURL,
                        retrieveImageTask: RetrieveImageTask?,
                                  options: KingfisherOptionsInfo?,
                            progressBlock: ImageDownloaderProgressBlock?,
@@ -243,7 +258,7 @@ extension ImageDownloader {
             return nil
         }
         
-        var downloadTask: RetrieveImageDownloadTask?
+        var downloadTask: RetrieveImageDownloadTask? = retrieveImageTask?.downloadTask ?? nil
         setupProgressBlock(progressBlock, completionHandler: completionHandler, forURL: request.URL!) {(session, fetchLoad) -> Void in
             if fetchLoad.downloadTask == nil {
                 let dataTask = session.dataTaskWithRequest(request)
@@ -253,8 +268,9 @@ extension ImageDownloader {
                 
                 dataTask.priority = options?.downloadPriority ?? NSURLSessionTaskPriorityDefault
                 dataTask.resume()
+            } else {
+                downloadTask?.internalTask.resume()
             }
-            
             fetchLoad.downloadTaskCount += 1
             downloadTask = fetchLoad.downloadTask
             

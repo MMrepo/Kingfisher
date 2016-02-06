@@ -134,6 +134,32 @@ public class KingfisherManager {
         
         return task
     }
+    
+    public func retrieveImageWithTask(task: RetrieveImageTask, forURL URL: NSURL,
+        optionsInfo: KingfisherOptionsInfo?,
+        progressBlock: DownloadProgressBlock?,
+        completionHandler: CompletionHandler?) -> RetrieveImageTask
+    {
+        
+        let resource = Resource(downloadURL: URL)
+        if let optionsInfo = optionsInfo where optionsInfo.forceRefresh {
+            downloadAndCacheImageWithURL(resource.downloadURL,
+                forKey: resource.cacheKey,
+                retrieveImageTask: task,
+                progressBlock: progressBlock,
+                completionHandler: completionHandler,
+                options: optionsInfo)
+        } else {
+            tryToRetrieveImageFromCacheForKey(resource.cacheKey,
+                withURL: resource.downloadURL,
+                retrieveImageTask: task,
+                progressBlock: progressBlock,
+                completionHandler: completionHandler,
+                options: optionsInfo)
+        }
+        
+        return task
+    }
 
     /**
     Get an image with `URL.absoluteString` as the key.
